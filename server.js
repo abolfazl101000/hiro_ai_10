@@ -1,39 +1,45 @@
 import express from "express";
 import cors from "cors";
-import OpenAI from "openai";
+import axios from "axios";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 دریافت کلید از متغیر محیطی
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const API_KEY = process.env.DEEPSEEK_API_KEY;
 
-// 🔥 روت اصلی تست سرور
 app.get("/", (req, res) => {
-  res.send("AI Server is Running ✔️");
+  res.send("DeepSeek AI Server ✔️ Running");
 });
 
-// 🔥 روت گفتگو
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
 
-    const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      input: message,
-    });
+    const response = await axios.post(
+      "https://api.deepseek.com/chat/completions",
+      {
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: message }]
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    res.json({ reply: response.output_text });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    res.json({ reply: response.data.choices[0].message.content });
+  } catch (error) {
+    console.error("ERR:", error.response?.data || error.message);
+    res.status(500).json({
+      error: "API request failed",
+      details: error.response?.data || error.message
+    });
   }
 });
 
-// پورت سرور
 app.listen(process.env.PORT || 3000, () => {
-  console.log("Server running...");
+  console.log("Server Running on Render/Local");
 });
