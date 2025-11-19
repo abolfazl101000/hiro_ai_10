@@ -1,31 +1,39 @@
-const express = require("express");
-const cors = require("cors");
-const { Configuration, OpenAIApi } = require("openai");
+import express from "express";
+import cors from "cors";
+import OpenAI from "openai";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,  // کلید امن در محیط
+// 🔥 دریافت کلید از متغیر محیطی
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
 
+// 🔥 روت اصلی تست سرور
+app.get("/", (req, res) => {
+  res.send("AI Server is Running ✔️");
+});
+
+// 🔥 روت گفتگو
 app.post("/chat", async (req, res) => {
-  const { message } = req.body;
-
   try {
-    const response = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: message }],
+    const { message } = req.body;
+
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: message,
     });
 
-    res.json({ reply: response.data.choices[0].message.content });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "AI error" });
+    res.json({ reply: response.output_text });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// پورت سرور
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running...");
+});
